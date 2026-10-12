@@ -1,8 +1,7 @@
 name: reco-act release to web
 
+# 운영 배포는 Actions 화면에서 수동 실행할 때만 수행한다 (PR·push로는 배포하지 않음).
 on:
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
     inputs:
       tags:
@@ -11,6 +10,8 @@ on:
         type: boolean
 jobs:
   build:
+    # 수동 실행 시 다른 브랜치를 골라도 main이 아니면 배포하지 않는다 (deploy는 build에 의존하므로 함께 건너뜀).
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
