@@ -5,6 +5,7 @@ node_modules/
 *.log
 *.wav
 *.pyc
+.pytest_cache/
 
 # Allow public client env file (mobile build URL — no secrets)
 !client/.env.mobile
@@ -28,3 +29,5 @@ client/dist/
 # Vite config compiled artifacts (tsc -b emits these from vite.config.ts)
 client/vite.config.js
 client/vite.config.d.ts
+CLAUDE.md
+server/prompt.txt

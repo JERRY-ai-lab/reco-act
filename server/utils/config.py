@@ -1,5 +1,5 @@
 import os, sys
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -15,6 +15,25 @@ inf = 9223372036854775807
 
 load_dotenv()
 
+# ==================== 프로파일 ====================
+APP_PROFILES = ("public", "airgap")
+
+
+def parse_app_profile(value: Optional[str]) -> str:
+    """APP_PROFILE 값을 검증한다. 미설정이면 public(현재 운영 동작).
+
+    그 외 값(빈 문자열, 대소문자·공백이 다른 값 포함)은 예외를 내서 기동을 멈춘다.
+    오타나 빈 값 때문에 airgap 서버가 조용히 public(외부 API 호출)으로 뜨는 것을 막는다.
+    """
+    if value is None:
+        return "public"
+    if value not in APP_PROFILES:
+        raise ValueError(f"Invalid APP_PROFILE={value!r}. Use one of: {', '.join(APP_PROFILES)}")
+    return value
+
+
+APP_PROFILE = parse_app_profile(os.getenv("APP_PROFILE"))
+
 ENVIRONMENT = os.getenv("ENVIRONMENT")  # 'local' or 'prod'
 
 if ENVIRONMENT == "prod":
@@ -26,6 +45,7 @@ else:
 
 RECORDS_DIR.mkdir(parents=True, exist_ok=True)
 
+logger.info(f"[CONFIG] App profile: {APP_PROFILE}")
 logger.info(f"[CONFIG] Environment: {ENVIRONMENT}")
 logger.info(f"[CONFIG] Records directory: {RECORDS_DIR}")
 
