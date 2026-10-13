@@ -22,6 +22,7 @@ from utils.auth import (
     hash_password,
     verify_password,
 )
+from utils.config import EMAIL_DELIVERABILITY_CHECK
 from utils.email import generate_verification_code, send_verification_email
 
 VERIFICATION_CODE_TTL = timedelta(minutes=10)
@@ -31,7 +32,7 @@ VERIFICATION_CODE_TTL = timedelta(minutes=10)
 
 def _validate_email_or_raise(email: str) -> None:
     try:
-        validate_email(email)
+        validate_email(email, check_deliverability=EMAIL_DELIVERABILITY_CHECK)
     except EmailNotValidError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

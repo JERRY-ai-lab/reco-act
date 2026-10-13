@@ -1,5 +1,4 @@
 """이메일 전송 관련 공통 유틸 (인증코드 생성, SMTP 발송)."""
-import os
 import secrets
 import smtplib
 from email.mime.text import MIMEText
@@ -7,17 +6,30 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
+from utils.config import SENDER_EMAIL, SENDER_PASSWORD, SMTP_HOST, SMTP_PORT, SMTP_SECURITY
 
 
 def generate_verification_code() -> str:
     """6자리 숫자 인증코드를 생성합니다."""
     return ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+
+
+def _send_mail(recipient_email: str, message: MIMEMultipart) -> None:
+    """설정된 SMTP 서버로 메일을 보낸다. 실패하면 예외를 낸다."""
+    if not SMTP_HOST:
+        raise RuntimeError("SMTP_HOST is not set")
+
+    if SMTP_SECURITY == "ssl":
+        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
+    else:
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+
+    with server:
+        if SMTP_SECURITY == "starttls":
+            server.starttls()
+        if SENDER_PASSWORD:
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.sendmail(SENDER_EMAIL, recipient_email, message.as_string())
 
 
 def send_verification_email(recipient_email: str, code: str) -> bool:
@@ -53,9 +65,7 @@ def send_verification_email(recipient_email: str, code: str) -> bool:
         part = MIMEText(html_body, "html")
         message.attach(part)
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            server.sendmail(SENDER_EMAIL, recipient_email, message.as_string())
+        _send_mail(recipient_email, message)
 
         return True
     except Exception as e:
@@ -107,9 +117,7 @@ def send_summary_email(
         )
         message.attach(attachment)
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-            server.sendmail(SENDER_EMAIL, recipient_email, message.as_string())
+        _send_mail(recipient_email, message)
 
         return True
     except Exception as e:

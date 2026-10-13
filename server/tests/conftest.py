@@ -37,6 +37,10 @@ CLEARED_ENV_KEYS = SECRET_ENV_KEYS + [
     "ENVIRONMENT",  # prod면 RECORDS_DIR이 /app/records가 된다
     "AZURE_OPENAI_API_VERSION",
     "WEB_ORIGIN",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_SECURITY",
+    "EMAIL_DELIVERABILITY_CHECK",
 ]
 
 os.environ.update(FAKE_ENV)
