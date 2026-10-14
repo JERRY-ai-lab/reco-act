@@ -2,7 +2,6 @@
 
 실제 SMTP 서버나 DNS에는 접속하지 않는다. smtplib과 email-validator의 DNS 조회 함수를 대역으로 바꾼다.
 """
-import importlib
 
 import pytest
 
@@ -13,19 +12,6 @@ from utils.config import parse_bool_env, parse_smtp_security
 
 
 # ==================== 설정 ====================
-
-@pytest.fixture
-def reload_config(monkeypatch):
-    """env를 바꿔 config를 다시 읽는다. 끝나면 env를 되돌리고 원래 상태로 다시 읽는다."""
-    def _reload(**env):
-        for key, value in env.items():
-            monkeypatch.setenv(key, value)
-        return importlib.reload(config)
-
-    yield _reload
-    monkeypatch.undo()
-    importlib.reload(config)
-
 
 def test_public_defaults_match_current_gmail():
     assert (config.SMTP_HOST, config.SMTP_PORT, config.SMTP_SECURITY) == ("smtp.gmail.com", 465, "ssl")

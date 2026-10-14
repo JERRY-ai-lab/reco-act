@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from langchain_core.documents import Document
-from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings, ChatOpenAI
 
 import logging
 
@@ -97,9 +97,40 @@ AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
 AZURE_OPENAI_EMBEDDING = os.getenv("AZURE_OPENAI_EMBEDDING")
 
+# ==================== LLM (airgap) ====================
+# airgap은 OpenAI 호환 서버에 붙는다. 운영은 vLLM, 개발은 OpenRouter(00-decisions 2.2). public은 위 Azure 설정을 그대로 쓴다.
+LLM_SERVINGS = ("vllm", "openrouter")
+
+
+def parse_llm_serving(value: Optional[str]) -> str:
+    """LLM_SERVING 값을 검증한다. 미설정이면 vllm(airgap 운영)."""
+    if value is None:
+        return "vllm"
+    if value not in LLM_SERVINGS:
+        raise ValueError(f"Invalid LLM_SERVING={value!r}. Use one of: {', '.join(LLM_SERVINGS)}")
+    return value
+
+
+LLM_BASE_URL = os.getenv("LLM_BASE_URL")
+LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_API_KEY = os.getenv("LLM_API_KEY")  # 인증 없는 vLLM이면 아무 값(예: EMPTY)
+LLM_SERVING = parse_llm_serving(os.getenv("LLM_SERVING"))
+
+# Qwen3 thinking 모드를 끄는 요청 본문. 서빙마다 방식이 다르다(01-plan 3.7, 9장).
+# ChatOpenAI의 reasoning 인자나 본문 최상위 "reasoning" 키는 Responses API(/responses)로 바꿔 보내므로 extra_body에만 넣는다.
+LLM_THINKING_OFF_BODY = {
+    # Qwen3 chat template 인자. vLLM은 요청의 chat_template_kwargs를 템플릿에 넘긴다. GPU 환경에서 실제 확인 전(9장).
+    "vllm": {"chat_template_kwargs": {"enable_thinking": False}},
+    # OpenRouter 통합 reasoning 인자. chat_template_kwargs와 reasoning.effort=none은 공급자가 무시했다(2026-10-14 확인).
+    # require_parameters: 이 인자와 response_format을 지원하는 공급자로만 보낸다.
+    "openrouter": {"reasoning": {"enabled": False}, "provider": {"require_parameters": True}},
+}
+
 
 def get_llm(temperature: float = 0.3):
-    """Azure OpenAI LLM 인스턴스를 반환합니다."""
+    """요약에 쓰는 LLM. public은 Azure OpenAI(현행), airgap은 OpenAI 호환 서버."""
+    if APP_PROFILE == "airgap":
+        return _get_openai_compatible_llm(temperature)
     return AzureChatOpenAI(
         azure_endpoint=AZURE_OPENAI_ENDPOINT,
         api_key=AZURE_OPENAI_API_KEY,
@@ -107,6 +138,24 @@ def get_llm(temperature: float = 0.3):
         api_version=AZURE_OPENAI_API_VERSION,
         temperature=temperature,
         # streaming=True
+    )
+
+
+def _get_openai_compatible_llm(temperature: float):
+    missing = [
+        name for name, value in (("LLM_BASE_URL", LLM_BASE_URL), ("LLM_MODEL", LLM_MODEL), ("LLM_API_KEY", LLM_API_KEY))
+        if not value
+    ]
+    if missing:
+        raise ValueError(f"airgap LLM settings are missing: {', '.join(missing)}")
+    # 구조화 출력은 with_structured_output 기본(json_schema, strict)을 그대로 쓴다.
+    # OpenRouter에서는 reasoning이 별도 필드로 와서 content에 <think>가 섞이지 않았다(2026-10-14 확인).
+    return ChatOpenAI(
+        base_url=LLM_BASE_URL,
+        model=LLM_MODEL,
+        api_key=LLM_API_KEY,
+        temperature=temperature,
+        extra_body=LLM_THINKING_OFF_BODY[LLM_SERVING],
     )
 
 
