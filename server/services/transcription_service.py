@@ -1,7 +1,7 @@
 """백그라운드 STT 처리.
 
 업로드 엔드포인트는 원본 파일만 저장하고 즉시 202로 응답한 뒤, 실제 변환(ffmpeg
-정규화 + Clova STT)은 여기서 백그라운드로 수행한다. 진행 상태는 meetings.transcription_status
+정규화 + STT 프로바이더, public은 Clova)은 여기서 백그라운드로 수행한다. 진행 상태는 meetings.transcription_status
 컬럼에 기록되어 프론트가 폴링으로 확인한다.
 
 서버가 변환 도중 재시작돼도 source_audio_path가 DB에 남아 있어 기동 시 재처리할 수 있다.
@@ -12,7 +12,6 @@ from pathlib import Path
 
 from pydub import AudioSegment
 
-from clova_stt import convert as clova_convert
 from services.meeting_service import (
     update_meeting_settings,
     update_transcript,
@@ -22,11 +21,13 @@ from services.meeting_service import (
     set_transcription_status,
     get_pending_transcription,
 )
+from stt.base import SttHints
+from stt.factory import get_stt_provider
 from utils.config import RECORDS_DIR
 
 
 def process_audio_transcription(meeting_id: str) -> None:
-    """meetings.source_audio_path의 원본을 WAV로 변환 후 Clova STT를 수행하고,
+    """meetings.source_audio_path의 원본을 WAV로 변환 후 STT를 수행하고,
     transcript/participants/audio_file/status를 갱신한다. 실패 시 status='failed'.
 
     동기 함수로 작성되어 있어 FastAPI BackgroundTasks(threadpool)에서 안전하게 실행된다.
@@ -54,12 +55,16 @@ def process_audio_transcription(meeting_id: str) -> None:
         # 2) 도메인 키워드 부스팅
         domain_keywords = get_domain_keywords(domain_id) if domain_id else None
 
-        # 3) Clova STT (수 분 소요 가능)
-        segments, speaker_names = clova_convert(
-            file_path=str(wav_path),
+        # 3) STT (수 분 소요 가능). 엔진은 STT_PROVIDER로 고른다(public은 Clova).
+        result = get_stt_provider().transcribe(
+            str(wav_path),
             language="ko-KR",
-            domain_keywords=domain_keywords,
+            hints=SttHints(keywords=domain_keywords or []),
         )
+        # 이 경로에는 화자분리 단계가 없어서 화자까지 주는 엔진(Clova)만 쓸 수 있다.
+        if result.segments is None:
+            raise RuntimeError(f"STT provider {result.engine} returned no speaker segments")
+        segments, speaker_names = result.segments, result.speaker_names
 
         # 4) 인식된 화자 수에 맞춰 참가자 갱신 후 transcript 저장
         if speaker_names:

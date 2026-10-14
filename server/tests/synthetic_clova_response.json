@@ -1,0 +1,85 @@
+{
+  "result": "COMPLETED",
+  "message": "Succeeded",
+  "token": "synthetic-token",
+  "version": "ncp_v2_synthetic",
+  "params": {
+    "service": "ncp",
+    "domain": "general",
+    "lang": "ko",
+    "completion": "sync",
+    "callback": "",
+    "diarization": {"enable": true, "speakerCountMin": -1, "speakerCountMax": -1},
+    "sed": {"enable": false},
+    "boostings": [{"words": "검색엔진, 벡터DB", "weight": 1.0}],
+    "forbiddens": "",
+    "wordAlignment": true,
+    "fullText": true,
+    "noiseFiltering": true,
+    "resultToObs": false,
+    "priority": 0
+  },
+  "progress": 100,
+  "keywords": {},
+  "segments": [
+    {
+      "start": 0,
+      "end": 3400,
+      "text": "오늘은 검색엔진 개편 일정을 정하겠습니다.",
+      "confidence": 0.95,
+      "diarization": {"label": "1"},
+      "speaker": {"label": "1", "name": "A", "edited": false},
+      "words": [[0, 700, "오늘은"], [750, 1600, "검색엔진"], [1650, 2100, "개편"], [2150, 2600, "일정을"], [2650, 3400, "정하겠습니다."]],
+      "textEdited": "오늘은 검색엔진 개편 일정을 정하겠습니다."
+    },
+    {
+      "start": 3900,
+      "end": 6800,
+      "text": "벡터 디비 테스트는 다음 주에 끝납니다",
+      "confidence": 0.88,
+      "diarization": {"label": "2"},
+      "speaker": {"label": "2", "name": "B", "edited": false},
+      "words": [[3900, 4400, "벡터"], [4450, 4900, "디비"], [4950, 5500, "테스트는"], [5550, 5900, "다음"], [5950, 6200, "주에"], [6250, 6800, "끝납니다"]],
+      "textEdited": "벡터DB 테스트는 다음 주에 끝납니다."
+    },
+    {
+      "start": 7100,
+      "end": 8300,
+      "text": "좋습니다.",
+      "confidence": 0.97,
+      "diarization": {"label": "1"},
+      "speaker": {"label": "1", "name": "A", "edited": false},
+      "words": [[7100, 8300, "좋습니다."]],
+      "textEdited": "좋습니다."
+    },
+    {
+      "start": 8600,
+      "end": 11200,
+      "text": "문서 수집은 제가 맡겠습니다.",
+      "confidence": 0.93,
+      "diarization": {"label": "3"},
+      "speaker": {"label": "3", "name": "C", "edited": false},
+      "words": [[8600, 9100, "문서"], [9150, 9800, "수집은"], [9850, 10200, "제가"], [10250, 11200, "맡겠습니다."]],
+      "textEdited": "문서 수집은 제가 맡겠습니다."
+    },
+    {
+      "start": 11500,
+      "end": 12900,
+      "text": "그럼 금요일에 다시 보죠.",
+      "confidence": 0.91,
+      "diarization": {"label": "2"},
+      "speaker": {"label": "2", "name": "B", "edited": false},
+      "words": [[11500, 11900, "그럼"], [11950, 12400, "금요일에"], [12450, 12650, "다시"], [12700, 12900, "보죠."]],
+      "textEdited": "그럼 금요일에 다시 보죠."
+    }
+  ],
+  "text": "오늘은 검색엔진 개편 일정을 정하겠습니다. 벡터 디비 테스트는 다음 주에 끝납니다 좋습니다. 문서 수집은 제가 맡겠습니다. 그럼 금요일에 다시 보죠.",
+  "confidence": 0.93,
+  "speakers": [
+    {"label": "2", "name": "B", "edited": false},
+    {"label": "1", "name": "A", "edited": false},
+    {"label": "3", "name": "C", "edited": false}
+  ],
+  "events": [],
+  "eventTypes": []
+}

@@ -47,6 +47,7 @@ CLEARED_ENV_KEYS = SECRET_ENV_KEYS + [
     "LLM_BASE_URL",
     "LLM_MODEL",
     "LLM_SERVING",
+    "STT_PROVIDER",
 ]
 
 os.environ.update(FAKE_ENV)
