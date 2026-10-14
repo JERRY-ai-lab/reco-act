@@ -62,6 +62,27 @@ logger.info(f"[CONFIG] App profile: {APP_PROFILE}")
 logger.info(f"[CONFIG] Environment: {ENVIRONMENT}")
 logger.info(f"[CONFIG] Records directory: {RECORDS_DIR}")
 
+# ==================== STT ====================
+# 엔진은 SttProvider(server/stt/) 뒤에 둔다(00-decisions 2.3). public은 Clova(현행)다.
+STT_PROVIDERS = ("clova", "faster_whisper", "qwen3_asr", "mock")
+
+
+def parse_stt_provider(value: Optional[str], app_profile: str) -> str:
+    """STT_PROVIDER 값을 검증한다. 미설정이면 public은 clova(현행), airgap은 faster_whisper.
+
+    airgap에서 clova(외부 API)를 고르면 예외로 기동을 멈춘다(00-decisions 3장).
+    """
+    if value is None:
+        return "clova" if app_profile == "public" else "faster_whisper"
+    if value not in STT_PROVIDERS:
+        raise ValueError(f"Invalid STT_PROVIDER={value!r}. Use one of: {', '.join(STT_PROVIDERS)}")
+    if value == "clova" and app_profile == "airgap":
+        raise ValueError("STT_PROVIDER=clova calls an external API and cannot be used with APP_PROFILE=airgap")
+    return value
+
+
+STT_PROVIDER = parse_stt_provider(os.getenv("STT_PROVIDER"), APP_PROFILE)
+
 # ==================== 메일(SMTP) ====================
 # 회원가입 인증코드, 비밀번호 재설정, 회의록 메일이 모두 이 설정을 쓴다(00-decisions 2.7).
 # public 기본값은 현행 Gmail(465, SSL)과 같다. airgap은 설치할 때 그 망의 사내 메일 서버를 지정한다.
